@@ -89,6 +89,9 @@
 #endif
 #include <linux/i2c/europa_tsp_gpio.h>
 
+#ifdef CONFIG_TMD27711_PLSENSOR
+#include <linux/taos_common.h>
+#endif
 
 #ifdef CONFIG_ARCH_MSM7X25
 #define MSM_PMEM_MDP_SIZE	0xb21000
@@ -115,7 +118,7 @@
 
 extern int board_hw_revision;
 
-#define VDD_WLAN_EN	77
+#define VDD_WLAN_EN	65
 #define	BT_PWR		88
 static int gpio_wlan_reset_n = 82;
 
@@ -1515,7 +1518,47 @@ static struct i2c_board_info sensor_i2c_devices[] = {
 		I2C_BOARD_INFO("taos",0x39),  
 	},
 #endif
+
+
 };
+
+#ifdef CONFIG_TMD27711_PLSENSOR
+
+#define TMD27711_I2C_ADDR    0x39
+#define TMD27711_IRQ         27
+
+static struct tmd2771x_platform_data tmd27711_data = {
+	.pdrive = 0x03,
+	.ppcount = 0x08,
+	.setup_resources = NULL,
+	.release_resources = NULL,
+};
+
+static struct msm_gpio taos_gpio_int_config_data[] = {
+	{GPIO_CFG(TMD27711_IRQ, 0, GPIO_CFG_INPUT,  GPIO_CFG_PULL_UP, GPIO_CFG_8MA), "taos_irq" },
+};
+
+static void taos_init_irq(void)
+{
+	int ret = 0;
+	ret = msm_gpios_request_enable(taos_gpio_int_config_data, 1);
+	if (ret < 0) {
+		pr_err("%s: gpio enable failed: %d\n", __func__, ret);
+		return;
+	}
+	pr_info("%s\n", __func__);
+
+	return;
+}
+
+static struct i2c_board_info gpio_i2c_board_info[] = {
+	{
+		I2C_BOARD_INFO("tmd27711", TMD27711_I2C_ADDR),
+		.irq = MSM_GPIO_TO_INT(TMD27711_IRQ),
+		.platform_data = &tmd27711_data,
+	},
+};
+#endif
 
 static struct i2c_board_info mus_i2c_devices_new[] = {
 	{
@@ -1747,6 +1790,11 @@ static struct platform_device msm_camera_sensor_s5k4ecgx = {
         .dev       = {  
                 .platform_data = &msm_camera_sensor_s5k4ecgx_data,
         },   
+};
+
+static struct platform_device msm_camera_flashlight_leds = {
+	.name	= "flashlight-leds",
+	.id	= -1,
 };
 #endif
 
@@ -2088,6 +2136,7 @@ static struct platform_device *devices[] __initdata = {
 #endif
 #ifdef CONFIG_S5K4ECGX_COOPER
 	&msm_camera_sensor_s5k4ecgx,
+	&msm_camera_flashlight_leds,
 #endif
 #ifdef CONFIG_S5K5CA //PCAM
 	&msm_camera_sensor_s5k5ca,
@@ -2155,7 +2204,7 @@ static struct msm_acpu_clock_platform_data msm7x2x_clock_data = {
 	.max_speed_delta_khz = 256000,
 #endif
 	.vdd_switch_time_us = 62,
-	.max_axi_khz = 160000,
+	.max_axi_khz = 422400,
 };
 
 void msm_serial_debug_init(unsigned int base, int irq,
@@ -2777,11 +2826,11 @@ msm_i2c_gpio_config(int iface, int config_type)
 }
 
 static struct msm_i2c_platform_data msm_i2c_pdata = {
-#if 1//PCAM : Fast I2C
+//#if 1//PCAM : Fast I2C
 	.clk_freq = 380000,
-#else//ORG : Normal I2C
-	.clk_freq = 100000,
-#endif//PCAM
+//#else//ORG : Normal I2C
+//	.clk_freq = 100000,
+//#endif//PCAM
 	.rmutex  = 0,
 	.pri_clk = 60,
 	.pri_dat = 61,
@@ -2868,7 +2917,7 @@ static void __init msm7x2x_init(void)
 #endif
 
 	if (cpu_is_msm7x27())
-		msm7x2x_clock_data.max_axi_khz = 200000;
+		msm7x2x_clock_data.max_axi_khz = 422400;
 
 	msm_acpu_clock_init(&msm7x2x_clock_data);
 
@@ -2877,7 +2926,7 @@ static void __init msm7x2x_init(void)
 	/* OEMs may modify the value at their discretion for performance */
 	/* The appropriate maximum replacement for 160000 is: */
 	/* clk_get_max_axi_khz() */
-	kgsl_pdata.high_axi_3d = 160000;
+	kgsl_pdata.high_axi_3d = clk_get_max_axi_khz();
 
 	/* 7x27 doesn't allow graphics clocks to be run asynchronously to */
 	/* the AXI bus */
@@ -2906,7 +2955,7 @@ static void __init msm7x2x_init(void)
         kgsl_pdata.pt_max_count = 1;
 #endif
 #endif
-	usb_mpp_init();
+     	usb_mpp_init();
 
 #ifdef CONFIG_USB_FUNCTION
 	msm_hsusb_pdata.swfi_latency =

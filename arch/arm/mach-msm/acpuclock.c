@@ -104,6 +104,7 @@ static remote_spinlock_t pll_lock;
 static struct shared_pll_control *pll_control;
 static struct clock_state drv_state = { 0 };
 static struct clkctl_acpu_speed *acpu_freq_tbl;
+static struct clkctl_acpu_speed current_clock;
 
 static void __init acpuclk_init(void);
 
@@ -229,15 +230,49 @@ static struct clkctl_acpu_speed pll0_960_pll1_196_pll2_1200[] = {
 
 /* 7x27 normal with GSM capable modem - PLL0 and PLL1 swapped and pll2 @ 800 */
 static struct clkctl_acpu_speed pll0_960_pll1_245_pll2_800[] = {
-	{ 0, 19200, ACPU_PLL_TCXO, 0, 0, 19200, 0, 0, 30720 },
-	{ 0, 120000, ACPU_PLL_0, 4, 7,  60000, 1, 3,  61440 },
-	{ 1, 122880, ACPU_PLL_1, 1, 1,  61440, 1, 3,  61440 },
-	{ 0, 200000, ACPU_PLL_2, 2, 3,  66667, 2, 4,  61440 },
-	{ 1, 245760, ACPU_PLL_1, 1, 0, 122880, 1, 4,  61440 },
-	{ 1, 320000, ACPU_PLL_0, 4, 2, 160000, 1, 5, 122880 },
-	{ 0, 400000, ACPU_PLL_2, 2, 1, 133333, 2, 5, 122880 },
-	{ 1, 480000, ACPU_PLL_0, 4, 1, 160000, 2, 6, 122880 },
-	{ 1, 800000, ACPU_PLL_2, 2, 0, 200000, 3, 7, 122880 },
+	{ 0, 8200, ACPU_PLL_TCXO, 0, 0, 8200, 0, 0, 15720 },
+	{ 0, 120000, ACPU_PLL_0, 4, 7,  60000, 1, 1,  61440 },
+	{ 1, 122880, ACPU_PLL_1, 1, 1,  61440, 1, 1,  61440 },
+	{ 1, 200000, ACPU_PLL_2, 2, 3,  66667, 2, 2,  61440 },
+	{ 1, 245760, ACPU_PLL_1, 1, 0, 122880, 1, 2,  61440 },
+	{ 1, 320000, ACPU_PLL_0, 4, 2, 160000, 1, 3, 122880 },
+#ifdef CONFIG_MSM_CPU_FREQ_OVERCLOCK_800
+	//{ 0, 403200, ACPU_PLL_2, 2, 2, 134400, 2, 4, 122880 },
+	//{ 1, 480000, ACPU_PLL_0, 4, 1, 160000, 2, 5, 122880 },
+	//{ 1, 604800, ACPU_PLL_2, 2, 1, 201600, 2, 7, 122880 },
+	//{ 1, 614400, ACPU_PLL_0, 4, 0, 204800, 2, 7, 122880 },
+	//{ 1, 672000, ACPU_PLL_0, 4, 0, 224000, 2, 7, 122880 },
+	//{ 1, 729600, ACPU_PLL_0, 4, 0, 243200, 2, 7, 122880 },
+	//{ 1, 748800, ACPU_PLL_0, 4, 0, 249600, 2, 7, 122880 },
+	//{ 1, 787200, ACPU_PLL_0, 4, 0, 262400, 2, 7, 200000 },
+	//{ 1, 806400, ACPU_PLL_0, 4, 0, 268800, 2, 7, 200000 },
+	//{ 1, 825600, ACPU_PLL_0, 4, 0, 275200, 2, 7, 200000 },
+	//{ 1, 844800, ACPU_PLL_0, 4, 0, 281600, 2, 7, 200000 },
+	//{ 1, 864000, ACPU_PLL_0, 4, 0, 288000, 2, 7, 200000 },
+	{ 0, 396800, ACPU_PLL_2, 2, 1, 198400, 1, 5, 122880 },
+    { 1, 480000, ACPU_PLL_0, 4, 1, 240000, 1, 6, 122880 },
+    { 1, 614400, ACPU_PLL_2, 2, 0, 204800, 2, 7, 122880 },
+	{ 1, 787200, ACPU_PLL_2, 2, 0, 262400, 2, 7, 200000 },
+	{ 1, 806400, ACPU_PLL_2, 2, 0, 268800, 2, 7, 200000 },
+	{ 1, 825600, ACPU_PLL_2, 2, 0, 275200, 2, 7, 200000 },
+	{ 1, 844800, ACPU_PLL_2, 2, 0, 281600, 2, 7, 200000 },
+	{ 1, 864000, ACPU_PLL_2, 2, 0, 288000, 2, 7, 200000 },
+	{ 1, 883200, ACPU_PLL_2, 2, 0, 294400, 2, 7, 200000 },
+	{ 1, 902400, ACPU_PLL_2, 2, 0, 300800, 2, 7, 200000 },
+	{ 1, 921600, ACPU_PLL_2, 2, 0, 307200, 2, 7, 200000 },
+	{ 1, 940800, ACPU_PLL_2, 2, 0, 313600, 2, 7, 200000 },
+	{ 1, 960000, ACPU_PLL_2, 2, 0, 320000, 2, 7, 200000 },
+#else
+	{ 0, 400000, ACPU_PLL_2, 2, 1, 133333, 2, 4, 122880 },
+    { 1, 480000, ACPU_PLL_0, 4, 1, 140000, 2, 5, 122880 },
+    { 1, 540000, ACPU_PLL_2, 2, 0, 153600, 3, 6, 122880 },
+    { 1, 614400, ACPU_PLL_2, 2, 0, 163600, 3, 6, 122880 },
+	{ 1, 672000, ACPU_PLL_2, 2, 0, 168000, 3, 6, 122880 },
+	{ 1, 729600, ACPU_PLL_2, 2, 0, 182400, 3, 7, 122880 },
+	{ 1, 768000, ACPU_PLL_2, 2, 0, 192000, 3, 7, 200000 },
+	{ 1, 799999, ACPU_PLL_2, 2, 0, 200000, 3, 7, 200000 },
+	{ 1, 800000, ACPU_PLL_2, 2, 0, 422400, 3, 7, 200000 },
+#endif
 	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0}, {0, 0, 0} }
 };
 
@@ -381,7 +416,7 @@ static int pc_pll_request(unsigned id, unsigned on)
  * ARM11 'owned' clock control
  *---------------------------------------------------------------------------*/
 
-#define POWER_COLLAPSE_KHZ 19200
+#define POWER_COLLAPSE_KHZ 8200
 unsigned long acpuclk_power_collapse(void)
 {
 	int ret = acpuclk_get_rate(smp_processor_id());
@@ -439,7 +474,14 @@ static void acpuclk_set_div(const struct clkctl_acpu_speed *hunt_s)
 		reg_clksel |= (hunt_s->ahbclk_div << 1);
 		writel(reg_clksel, A11S_CLK_SEL_ADDR);
 	}
-
+#ifdef CONFIG_MSM_CPU_FREQ_OVERCLOCK_800
+	// Perform overclocking if requested
+	if(hunt_s->a11clk_khz>787200) {
+		// Change the speed of PLL2
+		writel(hunt_s->a11clk_khz/19200, PLLn_L_VAL(2));
+		udelay(50);
+	}
+#endif
 	/* Program clock source and divider */
 	reg_clkctl = readl(A11S_CLK_CNTL_ADDR);
 	reg_clkctl &= ~(0xFF << (8 * src_sel));
@@ -451,6 +493,14 @@ static void acpuclk_set_div(const struct clkctl_acpu_speed *hunt_s)
 	reg_clksel ^= 1;
 	writel(reg_clksel, A11S_CLK_SEL_ADDR);
 
+#ifdef CONFIG_MSM_CPU_FREQ_OVERCLOCK_800
+	// Recover from overclocking
+	if(hunt_s->a11clk_khz<=787200) {
+		// Restore the speed of PLL2
+		writel(PLL_800_MHZ, PLLn_L_VAL(2));
+		udelay(50);
+	}
+#endif
 	/*
 	 * If the new clock divider is lower than the previous, then
 	 * program the divider after switching the clock
@@ -604,6 +654,7 @@ int acpuclk_set_rate(int cpu, unsigned long rate, enum setrate_reason reason)
 	if (strt_s->axiclk_khz != tgt_s->axiclk_khz) {
 		res = ebi1_clk_set_min_rate(CLKVOTE_ACPUCLK,
 						tgt_s->axiclk_khz * 1000);
+		int retries = 10;
 		if (res < 0)
 			pr_warning("Setting AXI min rate failed (%d)\n", res);
 	}
@@ -630,6 +681,7 @@ int acpuclk_set_rate(int cpu, unsigned long rate, enum setrate_reason reason)
 	/* Drop VDD level if we can. */
 	if (tgt_s->vdd < strt_s->vdd) {
 		res = acpuclk_set_vdd_level(tgt_s->vdd);
+		int retries = 10;
 		if (res < 0)
 			pr_warning("Unable to drop ACPU vdd (%d)\n", res);
 	}
@@ -768,6 +820,7 @@ static void __init acpu_freq_tbl_fixup(void)
 	/* Fix up PLL0 source divider if necessary. Also, fix up the AXI to
 	 * the max that's supported by the board (RAM used in board).
 	 */
+#ifdef CONFIG_MSM_CPU_FREQ_OVERCLOCK_800
 	axi_160mhz = (pll0_l == PLL_960_MHZ || pll1_l == PLL_960_MHZ);
 	axi_200mhz = (pll2_l == PLL_1200_MHZ || pll2_l == PLL_800_MHZ);
 	for (t = &acpu_freq_tbl[0]; t->a11clk_khz != 0; t++) {
@@ -779,11 +832,13 @@ static void __init acpu_freq_tbl_fixup(void)
 			t->axiclk_khz = 160000;
 		if (axi_200mhz && drv_state.max_axi_khz >= 200000
 		    && t->ahbclk_khz > 160000)
-			t->axiclk_khz = 200000;
+			t->axiclk_khz = 200000; 
 	}
-
+#endif
 	t--;
-	drv_state.max_axi_khz = t->axiclk_khz;
+#ifdef CONFIG_MSM_CPU_FREQ_OVERCLOCK_800
+	drv_state.max_axi_khz = 422400;
+#endif
 
 	/* The default 7x27 ACPU clock plan supports running the AXI bus at
 	 * 200 MHz. So we don't classify it as Turbo mode.

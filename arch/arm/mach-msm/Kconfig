@@ -26,6 +26,7 @@ config ARCH_MSM7X27
 	select CPU_V6
 	select MSM_REMOTE_SPINLOCK_SWP
 	select MSM_GPIOMUX
+	
 
 config ARCH_MSM7X30
 	bool "MSM7x30"
@@ -171,6 +172,14 @@ config MACH_BENI
 	help
 	  Support for the Samsung Beni board.
 
+config MACH_GIO
+	depends on ARCH_MSM7X27
+	depends on !MSM_STACKED_MEMORY
+	default n
+	bool "Gio"
+	help
+	  Support for the Samsung Gio board.
+
 config MACH_TASS
 	depends on ARCH_MSM7X27
 	depends on !MSM_STACKED_MEMORY
@@ -187,6 +196,11 @@ config MACH_LUCAS
 	help
 	  Support for the Samsung Lucas board.	  	  
 	  
+config RECOVERY_KERNEL
+	bool "kernel for recovery mode"
+	depends on MACH_EUROPA || MACH_CALLISTO || MACH_COOPER || MACH_BENI || MACH_TASS || MACH_LUCAS
+	default n
+
 config BOARD_REVISION
 	hex "Select H/W Revision"
 	depends on MACH_EUROPA || MACH_CALLISTO || MACH_COOPER || MACH_BENI || MACH_TASS || MACH_LUCAS
@@ -430,7 +444,8 @@ config PHYS_OFFSET
 	default "0x13600000" if !MSM_STACKED_MEMORY && MACH_COOPER
 	default "0x13600000" if !MSM_STACKED_MEMORY && MACH_BENI
 	default "0x13600000" if !MSM_STACKED_MEMORY && MACH_TASS	
-	default "0x13600000" if !MSM_STACKED_MEMORY && MACH_LUCAS	
+	default "0x13600000" if !MSM_STACKED_MEMORY && MACH_LUCAS
+	default "0x13600000" if !MSM_STACKED_MEMORY && MACH_GIO	
 	default "0x00200000" if !MSM_STACKED_MEMORY && MACH_EUROPA
 	default "0x00000000" if ARCH_QSD8X50 && MSM_SOC_REV_A
 	default "0x20000000" if ARCH_QSD8X50
@@ -996,6 +1011,10 @@ config MSM_CPU_FREQ_MIN
 	depends on MSM_CPU_FREQ_SET_MIN_MAX
 	default 245760
 
+config MSM_CPU_FREQ_OVERCLOCK_800
+	bool "Enable overlocking on mach-msm"
+	default n
+	  
 endif # CPU_FREQ_MSM
 
 config MSM_CPU_AVS
@@ -1362,3 +1381,13 @@ config BT_MSM_PINTEST
 	  This driver provides support for verifying the MSM to BT pin
 	  connectivity.
 endif
+
+config MSM_CPU_FREQ_OVERCLOCK
+	bool "Enable OC for MSM"
+	default n
+
+config MSM_CPU_FREQ_OVERCLOCK_AHB
+	bool "For really OC"
+	default n
+	depends on MSM_CPU_FREQ_OVERCLOCK
+
